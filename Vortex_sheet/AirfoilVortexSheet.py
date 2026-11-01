@@ -6,38 +6,38 @@
 # method" (pp. 369-374). Equation numbers below are Anderson's.
 #
 # Outline of the method:
-#   1. The body surface is wrapped with a vortex sheet gamma(s) (Fig. 4.15). There is
+#   1. The body surface is wrapped with a vortex sheet gamma(s). There is
 #      no closed-form solution for gamma(s), so the sheet is approximated by n straight
-#      panels (Fig. 3.40) with a CONSTANT strength gamma_j per unit length on each
+#      panels with a CONSTANT strength gamma_j per unit length on each
 #      panel. gamma_1 ... gamma_n are the unknowns. Because gamma is constant per
-#      panel this is the "first-order" method (p. 373).
-#   2. Potential induced at a point P by panel j (4.72):
+#      panel this is the "first-order" method.
+#   2. Potential induced at a point P by panel j:
 #          dphi_j = -(1/2pi) * integral_j( theta_pj * gamma_j ds_j )
-#      with theta_pj = atan((y - y_j)/(x - x_j))   (4.73),
-#      summed over all panels (4.74) and evaluated at control point i (4.75).
+#      with theta_pj = atan((y - y_j)/(x - x_j)),
+#      summed over all panels and evaluated at control point i.
 #   3. Boundary condition at the control point (= midpoint) of every panel: the
-#      normal velocity is zero,  V_inf,n + V_n = 0   (4.78), where
-#          V_inf,n = V_inf cos(beta_i)               (3.148)
-#          V_n     = d(phi)/d(n_i)                   (4.76)
-#      Combining these gives the crux of the method (4.79) / (4.80):
+#      normal velocity is zero,  V_inf,n + V_n = 0, where
+#          V_inf,n = V_inf cos(beta_i)              
+#          V_n     = d(phi)/d(n_i)                  
+#      Combining these gives the crux of the method:
 #          V_inf cos(beta_i) - sum_j (gamma_j / 2pi) * J_ij = 0
 #          J_ij = integral_j( d(theta_ij)/d(n_i) ds_j )   (depends only on geometry)
 #      -> n linear equations (one per panel) for the n unknowns gamma_j.
-#   4. Unlike the source panel method (Sec. 3.17), a lifting body also needs the
+#   4. Unlike the source panel method, a lifting body also needs the
 #      Kutta condition, gamma(TE) = 0. Numerically, for the two panels i and i-1
-#      that meet at the trailing edge (Fig. 4.32):   gamma_i = -gamma_(i-1)   (4.81)
+#      that meet at the trailing edge:   gamma_i = -gamma_(i-1)
 #      This is an extra (n+1)-th equation -> the system is overdetermined.
-#   5. Surface velocity and loads: the flow inside the body is at rest (Fig. 4.33),
-#      so the velocity just outside the sheet equals gamma (from (4.8), gamma = u1 - u2
+#   5. Surface velocity and loads: the flow inside the body is at rest,
+#      so the velocity just outside the sheet equals gamma, gamma = u1 - u2
 #      with u2 = 0); the pressure follows from Bernoulli. The circulation is
-#          Gamma = sum_j gamma_j * s_j               (4.82)
+#          Gamma = sum_j gamma_j * s_j              
 #      and the lift per unit span is
-#          L' = rho_inf * V_inf * Gamma              (4.83)
+#          L' = rho_inf * V_inf * Gamma          
 #
 # Conventions used in this code:
 #   - panels numbered clockwise, starting at the trailing edge on the lower surface
 #   - positive gamma = clockwise circulation (the same sign convention as
-#     Anderson's -1/(2pi) * integral(theta * gamma ds) potential in (4.72))
+#     Anderson's -1/(2pi) * integral(theta * gamma ds))
 #   - n_i = unit normal of panel i pointing OUT of the body
 
 import numpy as np
@@ -55,7 +55,7 @@ c = 1.0        # Chord length
 
 # Cosine-spaced x points (N + 1 points per surface -> 2N panels in total).
 # Cosine spacing puts many small panels near the leading and trailing edge and
-# fewer, larger panels in the middle of the airfoil, which Anderson (p. 373)
+# fewer, larger panels in the middle of the airfoil, which Anderson
 # calls usually advantageous for this method.
 N = 100
 x = 0.5 * (1 - np.cos(np.linspace(0, np.pi, N + 1)))
@@ -75,7 +75,7 @@ dyc_dx[back] = (2 * M / (1 - p)**2) * (p - x[back])
 # Thickness distribution.
 # Trailing edge is CLOSED (y_t(1) = 0). Anderson's method uses a closed contour in
 # which boundary point n+1 coincides with point 1, so that the two panels at
-# the trailing edge (panels i and i-1 in Fig. 4.32) touch at the TE point.
+# the trailing edge touch at the TE point.
 y_t = 5 * t * (
     0.2969 * np.sqrt(x)
     - 0.1260 * x
@@ -117,7 +117,7 @@ U_inf = V_inf * np.cos(alpha)
 W_inf = V_inf * np.sin(alpha)
 
 # ============================================================
-# PANEL GEOMETRY  (Fig. 3.40: straight panels between boundary points)
+# PANEL GEOMETRY
 # ============================================================
 n = len(xb) - 1                      # number of panels 
 X1, Y1 = xb[:-1], yb[:-1]            # panel start points (boundary points j)
@@ -130,7 +130,7 @@ if np.any(S < 1e-12):
 phi = np.arctan2(Y2 - Y1, X2 - X1)   # panel angles
 
 xc = 0.5 * (X1 + X2)                 # control points = panel midpoints (x_i, y_i),
-yc = 0.5 * (Y1 + Y2)                 # where the boundary condition (4.78) is applied
+yc = 0.5 * (Y1 + Y2)                 # where the boundary condition is applied
 
 tx, ty = np.cos(phi), np.sin(phi)    # unit tangents (clockwise direction)
 nx, ny = -np.sin(phi), np.cos(phi)   # unit normals n_i, pointing OUT of the body
@@ -147,11 +147,11 @@ def vortex_panel_velocity(xp, yp, j):
     xp, yp may be scalars or arrays. Not valid for points on panel j itself
     (the self-influence is handled separately in the matrix).
 
-    This is the velocity obtained from the potential of panel j, Eq. (4.72),
+    This is the velocity obtained from the potential of panel j,
     dphi_j = -(1/2pi) * integral( theta_pj * gamma_j ds_j ),
     integrated in closed form along the straight panel. The same function gives
     both the normal-velocity influence coefficients at the control points
-    (Eqs. 4.77 / 4.80) and the velocity at the grid points of the flow field.
+    and the velocity at the grid points of the flow field.
     """
     # Panel-local coordinates (origin at panel start, x_l along the panel)
     dxp = xp - X1[j]
@@ -160,7 +160,7 @@ def vortex_panel_velocity(xp, yp, j):
     yl = -dxp * np.sin(phi[j]) + dyp * np.cos(phi[j])
 
     # Angles and distances to the two panel end points
-    # (theta of Eq. 4.73, measured from each end point of the panel)
+    # (theta measured from each end point of the panel)
     th1 = np.arctan2(yl, xl)
     th2 = np.arctan2(yl, xl - S[j])
     r1_sq = xl**2 + yl**2
@@ -179,7 +179,7 @@ def vortex_panel_velocity(xp, yp, j):
 
 # ============================================================
 # ASSEMBLE AND SOLVE THE SYSTEM
-# Flow tangency at every control point, Anderson Eqs. (4.78)-(4.80):
+# Flow tangency at every control point:
 #     V_inf,n + V_n = 0  ->  sum_j gamma_j * A_ij = -V_inf . n_i
 # ============================================================
 U = np.zeros((n, n))
@@ -188,7 +188,7 @@ for j in range(n):
     U[:, j], V[:, j] = vortex_panel_velocity(xc, yc, j)
 
 # A_ij = normal velocity at control point i due to a unit-strength vortex on panel j.
-# This is the term -(1/2pi) * J_ij of Eqs. (4.77) / (4.80), with
+# This is the term -(1/2pi) * J_ij with
 # J_ij = integral_j( d(theta_ij)/d(n_i) ds_j ).
 A = U * nx[:, None] + V * ny[:, None]
 
@@ -197,15 +197,15 @@ A = U * nx[:, None] + V * ny[:, None]
 np.fill_diagonal(A, 0.0)
 
 # Right-hand side: cancel the freestream normal velocity,
-# V_inf,n = V_inf cos(beta_i) = V_inf . n_i   (Eq. 3.148)
+# V_inf,n = V_inf cos(beta_i) = V_inf . n_i
 rhs = -(U_inf * nx + W_inf * ny)
 
-# Kutta condition, Eq. (4.81): gamma_i = -gamma_(i-1) for the two panels that
-# touch at the trailing edge (Fig. 4.32), i.e. gamma(TE) = 0 in the limit.
+# Kutta condition: gamma_i = -gamma_(i-1) for the two panels that
+# touch at the trailing edge, i.e. gamma(TE) = 0 in the limit.
 # With this numbering these are the first panel (lower surface) and the last
 # panel (upper surface):  gamma_1 + gamma_m = 0.
 # Together with the n equations above this gives n + 1 equations for n unknowns,
-# i.e. an OVERDETERMINED system (p. 372).
+# i.e. an OVERDETERMINED system.
 kutta_row = np.zeros(n)
 kutta_row[0] = 1.0
 kutta_row[-1] = 1.0
@@ -221,10 +221,10 @@ gamma = Vt[keep].T @ ((Uu[:, keep].T @ rhs_full) / sv[keep])
 # AIRFOIL RESULTS
 # ============================================================
 # gamma_j is also the local surface velocity on panel j: the velocity inside the
-# body is zero (Fig. 4.33), so gamma = u1 - u2 = u1 (Eq. 4.8) is the velocity just
-# outside the vortex sheet, tangent to the surface (p. 373).
-Gamma = np.sum(gamma * S)                 # total circulation, Eq. (4.82): sum(gamma_j * s_j)
-Cl = 2.0 * Gamma / (V_inf * c)            # from L' = rho V_inf Gamma (Eq. 4.83), Cl = L' / (0.5 rho V_inf^2 c)
+# body is zero, so gamma = u1 - u2 = u1 is the velocity just
+# outside the vortex sheet, tangent to the surface.
+Gamma = np.sum(gamma * S)                 # total circulation: sum(gamma_j * s_j)
+Cl = 2.0 * Gamma / (V_inf * c)            # from L' = rho V_inf Gamma, Cl = L' / (0.5 rho V_inf^2 c)
 Cp = 1.0 - (gamma / V_inf)**2             # surface pressure coefficient from Bernoulli, V_surface = gamma
 
 print(f"Panels: {n}")
@@ -254,7 +254,7 @@ for j in range(n):
     Ug += gamma[j] * u
     Vg += gamma[j] * v
 
-# Mask points inside the airfoil (the velocity there should be ~0, Fig. 4.33)
+# Mask points inside the airfoil (the velocity there should be ~0)
 airfoil_path = Path(np.column_stack((xb, yb)))
 inside = airfoil_path.contains_points(
     np.column_stack((Xg.ravel(), Yg.ravel()))
