@@ -17,7 +17,7 @@ tol = 1e-4          # 0.01 percent
 max_iter = 5000
 
 # lift curve of the airfoil: alpha_eff [deg] vs cl
-# NOTE: rough numbers for a cambered 12% airfoil, replace with real airfoil data
+# Exmple airfoil data
 alpha_table = np.array([-30, -20, -16, -14, -12, -8, -4, 0, 4, 8, 12, 14, 15, 16, 18, 20, 30])
 cl_table = np.array([-0.95, -0.95, -1.02, -1.10, -1.00, -0.60, -0.18, 0.15, 0.58,
                      1.00, 1.38, 1.50, 1.55, 1.48, 1.25, 1.10, 1.00])
@@ -45,7 +45,7 @@ def solve(alpha_deg):
     n_ok = 0
     for it in range(max_iter):
 
-        # step 3: induced angle of attack at every station, eq 5.76
+        # step 3: induced angle of attack at every station
         dgdy = np.gradient(gamma, dy, edge_order=2)
         alpha_i = np.zeros(k + 1)
         for n in range(k + 1):
@@ -88,11 +88,11 @@ def solve(alpha_deg):
     if n_ok < 5:
         print("warning: not converged for alpha =", alpha_deg)
 
-    # gamma = 0 at the tips so cl is 0 there as well (only matters for the plot)
+    # gamma = 0 at the tips so cl is 0 there as well
     cl[0] = 0.0
     cl[-1] = 0.0
 
-    # step 9: lift and induced drag coefficient (eq 5.26 and 5.30)
+    # step 9: lift and induced drag coefficient
     CL = 2 / (V * S) * simpson(gamma, dy)
     CDi = 2 / (V * S) * simpson(gamma * alpha_i, dy)
     return CL, CDi, gamma, cl, alpha_i, it + 1
